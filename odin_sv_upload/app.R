@@ -42,13 +42,14 @@ ui <- fluidPage(
           tabPanel("PM Time Variation",plotOutput("TVar_PM")),
           tabPanel("T&RH Timeseries",plotOutput("Tseries_TRH")),
           tabPanel("T&RH Time Variation",plotOutput("TVar_TRH")),
-          tabPanel("Download data",downloadLink('downloadData', 'Download'))
+          tabPanel("Download data",downloadButton('downloadData', 'Download Dataset'))
         )
       )
    )
 )
 
 # Define server logic required to draw a histogram
+options(shiny.maxRequestSize = 90*1024^2)
 server <- function(input, output) {
   odin.data <- reactive({
     # Get the type of data (GSM, WIFI, OFFLINE)
@@ -156,28 +157,40 @@ server <- function(input, output) {
   # Download data
   output$downloadData <- downloadHandler(
     filename = function() {
-      paste0(odin.data()$Serialn[1], ".csv")
+      paste0(odin.data()$Serialn[1],
+             "_",
+             strftime(odin.data()$date[1], "%Y%m%d%H%M%S"),
+             '.csv')
     },
     content = function(file) {
-      #write.csv(odin.data(), file, row.names = FALSE)
+      # Calculate the output file (10 minute average)
       avg.odin.data <- timeAverage(odin.data()[,c('date',
                                                   'PM1',
                                                   'PM2.5',
                                                   'PM10',
                                                   'Temperature',
                                                   'RH')],avg.time = '10 min')
+      # Build the unique file name
       output.file <- paste0(odin.data()$Serialn[1],
+                            "_",
                             strftime(odin.data()$date[1], "%Y%m%d%H%M%S"),
                             '.csv')
-      write.csv(avg.odin.data,paste0('./',
+      # Write the data to a local file for upload to FTP
+      write.csv(avg.odin.data,paste0('./data/',
                                    output.file),
                 row.names = FALSE)
-      ftpUpload(paste0('./',
+      # Upload to FTP server
+      ftpUpload(paste0('./data/',
                        output.file),
                 paste0("ftp://ftp.niwa.co.nz/incoming/GustavoOlivares/Idaho/",
                        output.file))
-      system(paste0('rm ./',
+      # Remove local file
+      system(paste0('rm ./data/',
                     output.file))
+      # Send the data to download for client
+      write.csv(avg.odin.data,file,
+                row.names = FALSE)
+
     }
   )
 }

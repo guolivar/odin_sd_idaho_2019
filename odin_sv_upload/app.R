@@ -31,7 +31,8 @@ ui <- fluidPage(
         fileInput("file1", "Choose CSV File",
                   multiple = TRUE,
                   accept = c("text/csv",
-                             "text/comma-separated-values,text/plain",
+                             "text/plain",
+                             ".txt",
                              ".csv"))
       ),
       

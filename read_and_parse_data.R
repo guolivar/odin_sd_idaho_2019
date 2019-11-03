@@ -10,7 +10,8 @@
 # Libraries setup
 library(librarian)
 shelf(readr,
-      openair)
+      openair,
+      lib = '/tmp/')
 
 # Paths
 datapath <- path.expand('~/data/ODIN_IDAHO/2019/WORKING/')
